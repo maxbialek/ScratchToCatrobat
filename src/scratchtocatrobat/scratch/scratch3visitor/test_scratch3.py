@@ -1,5 +1,5 @@
 import unittest
-from  scratchtocatrobat.scratch.scratch3visitor.looks import *
+from scratchtocatrobat.scratch.scratch3visitor.looks import *
 from scratchtocatrobat.scratch.scratch3 import Scratch3Block
 from scratchtocatrobat.scratch.scratch3visitor.visitorUtil import BlockContext, visitBlock
 INPUTTYPE_LITERAL = 1
@@ -10,6 +10,15 @@ TYPE_INT = 1
 TYPE_STRING = 2
 TYPE_BLOCK = 3
 TYPE_VARIABLE = 4
+TYPE_KEY_PRESSED = 5
+TYPE_BACKDROP_LOOK = 6
+TYPE_BROADCAST_MESSAGE = 7
+TYPE_SENSOR = 8
+
+KEY_SPACE = "key_space"
+LOOK1 = "look1"
+TEST_STRING = "teststring"
+LOUDNESS = "loudness"
 
 
 def addInputToBlock(block, key, value, type=2, datatype=4):
@@ -33,6 +42,19 @@ def addInputOfType(block, key, type):
 
     block.inputs[key] = value
 
+def addFieldOfType(block, key, type):
+    if type == TYPE_KEY_PRESSED:
+        value = [KEY_SPACE]
+    elif type == TYPE_BACKDROP_LOOK:
+        value = [LOOK1]
+    elif type == TYPE_BROADCAST_MESSAGE:
+        value = [TEST_STRING]
+    elif type == TYPE_SENSOR:
+        value = [LOUDNESS]
+    else:
+        return
+
+    block.fields[key] = value
 
 def create_block_context(opcode):
     context = BlockContext(None, {})
@@ -797,6 +819,78 @@ class TestScratch3Blocks(unittest.TestCase):
         converted_block = visitBlock(context)
         assert converted_block[0] == "doForever"
         assert converted_block[1][0][0] == "say:"
+
+
+### testcases for event.py ###################
+
+    def test_visitWhenflagclicked(self):
+        context = create_block_context("event_whenflagclicked")
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 1
+        assert converted_block[0] == "whenGreenFlag"
+
+    def test_visitBroadcast(self):
+        context = create_block_context("event_broadcast")
+        testblock = context.block
+        addInputOfType(testblock, "BROADCAST_INPUT", TYPE_STRING)
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "broadcast:"
+        assert converted_block[1] == TEST_STRING
+
+    def test_visitBroadcastandwait(self):
+        context = create_block_context("event_broadcastandwait")
+        testblock = context.block
+        addInputOfType(testblock, "BROADCAST_INPUT", TYPE_STRING)
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "doBroadcastAndWait"
+        assert converted_block[1] == TEST_STRING
+
+    def test_visitWhenthisspriteclicked(self):
+        context = create_block_context("event_whenthisspriteclicked")
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 1
+        assert converted_block[0] == "whenClicked"
+
+    def test_visitWhenkeypressed(self):
+        context = create_block_context("event_whenkeypressed")
+        testblock = context.block
+        addFieldOfType(testblock, "KEY_OPTION", TYPE_KEY_PRESSED)
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "whenKeyPressed"
+        assert converted_block[1] == KEY_SPACE
+
+    def test_visitWhenbackdropswitchesto(self):
+        context = create_block_context("event_whenbackdropswitchesto")
+        testblock = context.block
+        addFieldOfType(testblock, "BACKDROP", TYPE_BACKDROP_LOOK)
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "whenSceneStarts"
+        assert converted_block[1] == LOOK1
+
+    def test_visitWhenbroadcastreceived(self):
+        context = create_block_context("event_whenbroadcastreceived")
+        testblock = context.block
+        addFieldOfType(testblock, "BROADCAST_OPTION", TYPE_BROADCAST_MESSAGE)
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "whenIReceive"
+        assert converted_block[1] == TEST_STRING
+
+    def test_visitWhengreaterthan(self):
+        context = create_block_context("event_whengreaterthan")
+        testblock = context.block
+        addFieldOfType(testblock, "WHENGREATERTHANMENU", TYPE_SENSOR)
+        addInputOfType(testblock, "VALUE", TYPE_INT)
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 3
+        assert converted_block[0] == "whenSensorGreaterThan"
+        assert converted_block[1] == LOUDNESS
+        assert converted_block[2] == 1234
+
 
 ### Motion block testcases ###################
     def test_visitMovesteps(self):
