@@ -7,7 +7,6 @@ def visitWait(blockcontext):
     duration = visitGeneric(blockcontext, 'DURATION')
     if duration == []:
         duration = block.inputs['DURATION'][1][1]
-    print "\t\twait visited!"
     return ["wait:elapsed:from:", duration]
 
 def visitRepeat(blockcontext):
@@ -16,14 +15,11 @@ def visitRepeat(blockcontext):
     if times == []:
         times = block.inputs["TIMES"][1][1]
     substack = visitSubstack(blockcontext, "SUBSTACK")
-    print "\t\trepeat visited!"
-
     return ["doRepeat", times, substack]
 
 def visitIf(blockcontext):
     condition = visitCondition(blockcontext)
     substack1 = visitSubstack(blockcontext, "SUBSTACK")
-    print "\t\tif visited!"
     return ["doIf", condition, substack1]
 
 def visitIf_else(blockcontext):
