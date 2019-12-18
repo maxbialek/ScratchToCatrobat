@@ -11,6 +11,9 @@ TYPE_STRING = 2
 TYPE_BLOCK = 3
 TYPE_VARIABLE = 4
 
+KEY_SPACE = "key_space"
+LOOK1 = "look1"
+
 
 def addInputToBlock(block, key, value, type=2, datatype=4):
 
@@ -32,6 +35,12 @@ def addInputOfType(block, key, type):
         return
 
     block.inputs[key] = value
+
+def addFieldsKeyPressed(block, key):
+    block.fields[key] = [KEY_SPACE]
+
+def addFieldsBackdropLook(block, key):
+    block.fields[key] = [LOOK1]
 
 def create_block_context(opcode):
     context = BlockContext(None, {})
@@ -811,10 +820,45 @@ class TestScratch3Blocks(unittest.TestCase):
         testblock = context.block
         addInputOfType(testblock, "BROADCAST_INPUT", TYPE_STRING)
         converted_block = visitBlock(context)
-
         assert len(converted_block) == 2
         assert converted_block[0] == "broadcast:"
         assert converted_block[1] == "teststring"
+
+    def test_visitBroadcastandwait(self):
+        context = create_block_context("event_broadcastandwait")
+        testblock = context.block
+        addInputOfType(testblock, "BROADCAST_INPUT", TYPE_STRING)
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "doBroadcastAndWait"
+        assert converted_block[1] == "teststring"
+
+    def test_visitWhenthisspriteclicked(self):
+        context = create_block_context("event_whenthisspriteclicked")
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 1
+        assert converted_block[0] == "whenClicked"
+
+    def test_visitWhenkeypressed(self):
+        context = create_block_context("event_whenkeypressed")
+        testblock = context.block
+        addFieldsKeyPressed(testblock, "KEY_OPTION")
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "whenKeyPressed"
+        assert converted_block[1] == KEY_SPACE
+
+    def test_visitWhenbackdropswitchesto(self):
+        context = create_block_context("event_whenbackdropswitchesto")
+        testblock = context.block
+        addFieldsBackdropLook(testblock, "BACKDROP")
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 2
+        assert converted_block[0] == "whenSceneStarts"
+        assert converted_block[1] == LOOK1
+
+    def test_visitWhenbroadcastreceived(self):
+        assert False
 
 
 ### Motion block testcases ###################
