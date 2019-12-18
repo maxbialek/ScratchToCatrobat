@@ -33,7 +33,6 @@ def addInputOfType(block, key, type):
 
     block.inputs[key] = value
 
-
 def create_block_context(opcode):
     context = BlockContext(None, {})
     block = createScratch3Block(context, opcode)
@@ -797,6 +796,26 @@ class TestScratch3Blocks(unittest.TestCase):
         converted_block = visitBlock(context)
         assert converted_block[0] == "doForever"
         assert converted_block[1][0][0] == "say:"
+
+
+### testcases for event.py ###################
+
+    def test_visitWhenflagclicked(self):
+        context = create_block_context("event_whenflagclicked")
+        converted_block = visitBlock(context)
+        assert len(converted_block) == 1
+        assert converted_block[0] == "whenGreenFlag"
+
+    def test_visitBroadcast(self):
+        context = create_block_context("event_broadcast")
+        testblock = context.block
+        addInputOfType(testblock, "BROADCAST_INPUT", TYPE_STRING)
+        converted_block = visitBlock(context)
+
+        assert len(converted_block) == 2
+        assert converted_block[0] == "broadcast:"
+        assert converted_block[1] == "teststring"
+
 
 ### Motion block testcases ###################
     def test_visitMovesteps(self):
