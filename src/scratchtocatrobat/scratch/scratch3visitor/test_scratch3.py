@@ -12,7 +12,7 @@ TYPE_BLOCK = 3
 TYPE_VARIABLE = 4
 TYPE_KEY_PRESSED = 5
 TYPE_BACKDROP_LOOK = 6
-TYPE_BROADCAST_OPTION = 7
+TYPE_BROADCAST_MESSAGE = 7
 TYPE_SENSOR = 8
 
 KEY_SPACE = "key_space"
@@ -47,7 +47,7 @@ def addFieldOfType(block, key, type):
         value = [KEY_SPACE]
     elif type == TYPE_BACKDROP_LOOK:
         value = [LOOK1]
-    elif type == TYPE_BROADCAST_OPTION:
+    elif type == TYPE_BROADCAST_MESSAGE:
         value = [TEST_STRING]
     elif type == TYPE_SENSOR:
         value = [LOUDNESS]
@@ -874,7 +874,7 @@ class TestScratch3Blocks(unittest.TestCase):
     def test_visitWhenbroadcastreceived(self):
         context = create_block_context("event_whenbroadcastreceived")
         testblock = context.block
-        addFieldOfType(testblock, "BROADCAST_OPTION", TYPE_BROADCAST_OPTION)
+        addFieldOfType(testblock, "BROADCAST_OPTION", TYPE_BROADCAST_MESSAGE)
         converted_block = visitBlock(context)
         assert len(converted_block) == 2
         assert converted_block[0] == "whenIReceive"
