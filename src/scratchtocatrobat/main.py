@@ -156,7 +156,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                     #json.dump(json.JSONEncoder.encode(scratch3data),file)
                     json.dump(scratch2Data, file, sort_keys=True, indent=4, separators=(',', ': '))
 
-            project = scratch.Project(scratch_project_dir, progress_bar=progress_bar, is_local_project = is_local_project)
+            project = scratch.Project(scratch_project_dir, project_id=project_ID, progress_bar=progress_bar, is_local_project=is_local_project)
             if isScratch3Project:
                 project.name = scratch3ProjectName
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)

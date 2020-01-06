@@ -287,6 +287,9 @@ class MediaConverter(object):
                 converted_scratch_md5_name = _resource_name_for(src_path)
                 new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
                                                                 scratch_resource_name)
+
+                ext = os.path.splitext(converted_scratch_md5_name)[1]
+                new_file_name = self.scratch_project.project_id + "_" + scratch_resource_name + ext
                 self.renamed_files_map[old_file_name] = new_file_name
             shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
