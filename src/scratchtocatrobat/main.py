@@ -99,6 +99,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
         progress_bar = helpers.ProgressBar(None, web_mode, sys.stdout)
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
             is_local_project = True
+            project_ID = None
             if scratch_project_file_or_url.startswith("https://"):
                 is_local_project = False
                 validate_scratch_url(scratch_project_file_or_url)
