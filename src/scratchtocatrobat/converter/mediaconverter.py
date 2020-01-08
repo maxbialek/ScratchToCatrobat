@@ -215,6 +215,7 @@ class MediaConverter(object):
         assert reference_index == resource_index and reference_index == num_total_resources
 
         converted_media_files_to_be_removed = set()
+        image_index, sound_index = [0], [0]
         for resource_info in all_used_resources:
             scratch_md5_name = resource_info["scratch_md5_name"]
 
@@ -259,7 +260,8 @@ class MediaConverter(object):
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
             self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
-                                  resource_info["media_type"], resource_info["object_name"])
+                                  resource_info["media_type"], resource_info["object_name"],
+                                  image_index, sound_index)
 
             if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
                 converted_media_files_to_be_removed.add(src_path)
@@ -280,7 +282,7 @@ class MediaConverter(object):
                 info.fileName = new_file_name
 
 
-    def _copy_media_file(self, scratch_md5_name, src_path, dest_path, media_type, object_name):
+    def _copy_media_file(self, scratch_md5_name, src_path, dest_path, media_type, object_name, image_index, sound_index):
         # for Catrobat separate file is needed for resources which are used multiple times but with different names
         for scratch_resource_name in self.scratch_project.find_all_resource_names_for(scratch_md5_name):
             new_file_name = catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
@@ -288,12 +290,22 @@ class MediaConverter(object):
                 old_file_name = new_file_name
                 converted_scratch_md5_name = _resource_name_for(src_path)
                 ext = os.path.splitext(converted_scratch_md5_name)[1]
-                new_file_name = self.scratch_project.project_id + "_" + object_name + "_" + scratch_resource_name + ext
+                if media_type == MediaType.UNCONVERTED_SVG:
+                    new_file_name = "image_" + str(image_index[0]) + ext
+                    image_index[0] += 1
+                else:
+                    new_file_name = "sound_" + str(sound_index[0]) + ext
+                    sound_index[0] += 1
                 self.renamed_files_map[old_file_name] = new_file_name
             else:
                 old_file_name = new_file_name
                 ext = os.path.splitext(scratch_md5_name)[1]
-                new_file_name = self.scratch_project.project_id + "_" + object_name + "_" + scratch_resource_name + ext
+                if media_type == MediaType.IMAGE:
+                    new_file_name = "image_" + str(image_index[0]) + ext
+                    image_index[0] += 1
+                else:
+                    new_file_name = "sound_" + str(sound_index[0]) + ext
+                    sound_index[0] += 1
                 self.renamed_files_map[old_file_name] = new_file_name
 
             shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
