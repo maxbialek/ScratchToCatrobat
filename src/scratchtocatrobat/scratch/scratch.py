@@ -608,7 +608,7 @@ class Project(RawProject):
         super(Project, self).__init__(self.raw_project_code_from_project_folder_path(project_base_path))
         self.project_base_path = project_base_path
         if project_id is not None:
-            self.project_id = self.get_info().get("projectID") # if project_id is None else project_id
+            self.project_id = str(self.get_info().get("projectID")) # if project_id is None else project_id
         else:
             self.project_id = project_id
 
