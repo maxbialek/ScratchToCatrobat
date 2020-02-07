@@ -263,6 +263,11 @@ TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP = {
     "117300839": u"◆NHK「わいわい プログラミング」\nメインコーナー「why!?大喜利」では、月がわりでお題を出すよ！毎月末が応募締め切り。優秀者にはインタビューも。さぁ、キミも投稿してみよう！\nhttp://www.nhk.or.jp/school/programming/oogiri/index.html\n\n◆「キミのびっくりハウスをつくろう！～やねうら部屋 編～」\nキャラクター onnacodomo\n制作 NHK\n"
 }
 
+TEST_SCRATCH3_PROJECT_ID_TO_URL = {
+    'https://scratch.mit.edu/projects/345928950/': '345928950',
+    'https://scratch.mit.edu/projects/344529508/': '344529508',
+}
+
 
 class WebApiTest(common_testing.BaseTestCase):
 
@@ -349,6 +354,20 @@ class WebApiTest(common_testing.BaseTestCase):
         for (project_id, expected_visibility_state) in project_visibility_map.iteritems():
             detected_visibility_state = scratchwebapi.getMetaDataEntry(project_id, 'visibility')
             assert expected_visibility_state == detected_visibility_state
+
+    def test_scratch3_projects_correct_init(self):
+        import scratch3
+        for project_url, project_id in TEST_SCRATCH3_PROJECT_ID_TO_URL.iteritems():
+            self._set_testresult_folder_subdir(project_id)
+            result_folder_path = self._testresult_folder_path
+            scratchwebapi.download_project(project_url, result_folder_path)
+            assert scratch3.is_scratch3_project(result_folder_path)
+
+            scratch3.convert_to_scratch2_data(result_folder_path, project_id)
+            project = scratch.Project(result_folder_path)
+            assert project is not None
+            assert project_id == project.project_id
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

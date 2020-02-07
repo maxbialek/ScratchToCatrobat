@@ -173,6 +173,7 @@ def downloadProjectMetaData(project_id, retry_after_http_status_exception=False)
                 document["meta_data_timestamp"] = datetime.now()
                 _cached_jsoup_documents[project_id] = document
                 _projectMetaData[project_id] = document
+            print(document)
             return document
         except urllib2.HTTPError as e:
             if e.code == 404:
