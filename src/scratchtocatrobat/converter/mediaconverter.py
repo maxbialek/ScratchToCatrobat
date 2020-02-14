@@ -262,6 +262,9 @@ class MediaConverter(object):
             if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
                 converted_media_files_to_be_removed.add(src_path)
 
+        for i, j in self.renamed_files_map.iteritems():
+            print(i + (50 - len(i))*" " + j)
+
         self._update_file_names_of_converted_media_files()
 
         for media_file_to_be_removed in converted_media_files_to_be_removed:
@@ -288,6 +291,7 @@ class MediaConverter(object):
                 new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
                                                                 scratch_resource_name)
                 self.renamed_files_map[old_file_name] = new_file_name
+            print(scratch_md5_name + (50 - len(scratch_md5_name))*" " + new_file_name)
             shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
     def resize_png(self, path_in, path_out, bitmapResolution):
