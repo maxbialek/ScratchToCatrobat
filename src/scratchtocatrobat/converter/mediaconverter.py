@@ -126,7 +126,7 @@ class MediaConverter(object):
 
                 assert os.path.exists(costume_src_path), "Not existing: {}".format(costume_src_path)
                 assert file_ext in {".png", ".svg", ".jpg", ".gif"}, \
-                       "Unsupported image file extension: %s" % costume_src_path
+                    "Unsupported image file extension: %s" % costume_src_path
                 ispng = file_ext == ".png"
                 is_unconverted = file_ext == ".svg"
 
@@ -213,6 +213,7 @@ class MediaConverter(object):
         assert reference_index == resource_index and reference_index == num_total_resources
 
         converted_media_files_to_be_removed = set()
+        image_counter, sound_file_counter = [0], [0]
         for resource_info in all_used_resources:
             scratch_md5_name = resource_info["scratch_md5_name"]
 
@@ -257,13 +258,28 @@ class MediaConverter(object):
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
             self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
-                                  resource_info["media_type"])
+                                  resource_info["media_type"], image_counter, sound_file_counter)
+
+            '''if resource_info["media_type"] == MediaType.IMAGE or resource_info["media_type"] == MediaType.UNCONVERTED_SVG:
+                new_file_name = "img_#" + str(image_counter) + ".png"
+                image_counter += 1
+            else:
+                new_file_name = "snd_#" + str(sound_file_counter) + ".wav"
+                sound_file_counter += 1
+
+            shared_resource_counter = 0
+            while scratch_md5_name in self.renamed_files_map:
+                split_name = scratch_md5_name.split('.')
+                scratch_md5_name = split_name[0] + "_#" + str(shared_resource_counter) + "." + split_name[-1]
+            self.renamed_files_map[scratch_md5_name] = new_file_name
+            shutil.copyfile(src_path, os.path.join(resource_info["dest_path"], new_file_name))'''
+
+
+
 
             if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
                 converted_media_files_to_be_removed.add(src_path)
 
-        for i, j in self.renamed_files_map.iteritems():
-            print(i + (50 - len(i))*" " + j)
 
         self._update_file_names_of_converted_media_files()
 
@@ -272,16 +288,16 @@ class MediaConverter(object):
 
 
     def _update_file_names_of_converted_media_files(self):
-        for (old_file_name, new_file_name) in self.renamed_files_map.iteritems():
+        for old_file_name, new_file_name in self.renamed_files_map.iteritems():
             look_data_or_sound_infos = filter(lambda info: info.fileName == old_file_name,
-                                      catrobat.media_objects_in(self.catrobat_program))
+                                              catrobat.media_objects_in(self.catrobat_program))
             # assert len(look_data_or_sound_infos) > 0
 
             for info in look_data_or_sound_infos:
                 info.fileName = new_file_name
 
 
-    def _copy_media_file(self, scratch_md5_name, src_path, dest_path, media_type):
+    def _copy_media_file(self, scratch_md5_name, src_path, dest_path, media_type, img_cnt, snd_cnt):
         # for Catrobat separate file is needed for resources which are used multiple times but with different names
         for scratch_resource_name in self.scratch_project.find_all_resource_names_for(scratch_md5_name):
             new_file_name = catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
@@ -291,7 +307,15 @@ class MediaConverter(object):
                 new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
                                                                 scratch_resource_name)
                 self.renamed_files_map[old_file_name] = new_file_name
+            if media_type == MediaType.IMAGE or media_type == MediaType.UNCONVERTED_SVG:
+                new_file_name = "img_#" + str(img_cnt[0]) + ".png"
+                img_cnt[0] += 1
+            else:
+                new_file_name = "snd_#" + str(snd_cnt[0]) + ".wav"
+                snd_cnt[0] += 1
+
             print(scratch_md5_name + (50 - len(scratch_md5_name))*" " + new_file_name)
+
             shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
     def resize_png(self, path_in, path_out, bitmapResolution):
