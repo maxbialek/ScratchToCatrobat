@@ -97,6 +97,28 @@ class MediaConverter(object):
         self.sounds_path = sounds_path
         self.renamed_files_map = {}
 
+        tmp = self.catrobat_program.getDefaultScene()
+        print(tmp)
+        tmp2 = tmp.getSpriteList()
+        print(tmp2)
+        for obj in tmp2:
+            tmp3 = obj.getLookList()
+            for look in tmp3:
+                print(look.fileName)
+            tmp4 = obj.getSoundList()
+            for sound in tmp4:
+                print(sound.fileName)
+
+        '''sprite_list = self.catrobat_program.getDefaultScene().getSpriteList()
+        look_list = self.catrobat_program.getDefaultScene().getSpriteList().getLookList()
+        sound_list = self.catrobat_program.getDefaultScene().getSpriteList().getSoundList()
+        print("#"*80)
+        for look in look_list:
+            print(look.fileName)
+
+        print("#"*80)
+        for sound in sound_list:
+            print(sound.fileName)'''
 
     def convert(self, progress_bar = None):
         all_used_resources = []
@@ -126,7 +148,7 @@ class MediaConverter(object):
 
                 assert os.path.exists(costume_src_path), "Not existing: {}".format(costume_src_path)
                 assert file_ext in {".png", ".svg", ".jpg", ".gif"}, \
-                       "Unsupported image file extension: %s" % costume_src_path
+                    "Unsupported image file extension: %s" % costume_src_path
                 ispng = file_ext == ".png"
                 is_unconverted = file_ext == ".svg"
 
@@ -219,6 +241,15 @@ class MediaConverter(object):
         for resource_info in all_used_resources:
             scratch_md5_name = resource_info["scratch_md5_name"]
 
+            # TODO: currently these names have to be encoded before printing -> encode them in the json!!!
+            # print(resource_info)
+            print(resource_info["object_name"].encode("UTF-8"))
+            print(resource_info["info"]["costumeName"].encode("UTF-8") if
+                  "costumeName" in resource_info["info"] else
+                  resource_info["info"]["soundName"].encode("UTF-8"))
+
+            log.info(resource_info["object_name"])
+
             # check if path changed after conversion
             old_src_path = resource_info["src_path"]
             if old_src_path in new_src_paths:
@@ -259,6 +290,8 @@ class MediaConverter(object):
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
+            print("\t\t" + scratch_md5_name)
+
             self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
                                   resource_info["media_type"], resource_info["object_name"],
                                   image_index, sound_index)
@@ -266,7 +299,34 @@ class MediaConverter(object):
             if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
                 converted_media_files_to_be_removed.add(src_path)
 
+        tmp = self.catrobat_program.getDefaultScene()
+        print(tmp)
+        tmp2 = tmp.getSpriteList()
+        print(tmp2)
+        for obj in tmp2:
+            tmp3 = obj.getLookList()
+            for look in tmp3:
+                print(look.fileName)
+            tmp4 = obj.getSoundList()
+            for sound in tmp4:
+                print(sound.fileName)
+
+        # print("^"*80)
+
         self._update_file_names_of_converted_media_files()
+
+        '''tmp = self.catrobat_program.getDefaultScene()
+        print(tmp)
+        tmp2 = tmp.getSpriteList()
+        print(tmp2)
+        for obj in tmp2:
+            tmp3 = obj.getLookList()
+            for look in tmp3:
+                print(look.fileName)
+            tmp4 = obj.getSoundList()
+            for sound in tmp4:
+                print(sound.fileName)'''
+
 
         for media_file_to_be_removed in converted_media_files_to_be_removed:
             os.remove(media_file_to_be_removed)
@@ -275,7 +335,7 @@ class MediaConverter(object):
     def _update_file_names_of_converted_media_files(self):
         for (old_file_name, new_file_name) in self.renamed_files_map.iteritems():
             look_data_or_sound_infos = filter(lambda info: info.fileName == old_file_name,
-                                      catrobat.media_objects_in(self.catrobat_program))
+                                              catrobat.media_objects_in(self.catrobat_program))
             # assert len(look_data_or_sound_infos) > 0
 
             for info in look_data_or_sound_infos:

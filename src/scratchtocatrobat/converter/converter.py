@@ -651,6 +651,9 @@ class Converter(object):
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
                                 scratch_project.name, scratch_project.instructions,
                                 scratch_project.notes_and_credits)
+
+        print("\t" +_catr_project.getDefaultScene().getSpriteList()[0].getLookList()[0].fileName)
+
         return _catr_project
 
     def _add_global_user_lists_to(self, catrobat_scene):
@@ -663,8 +666,10 @@ class Converter(object):
             catrobat_scene.project.userLists.add(global_user_list["listName"])
 
     def _add_converted_sprites_to(self, catrobat_scene):
+        media_resource_set = set()
         for scratch_object in self.scratch_project.objects:
-            catr_sprite = self._scratch_object_converter(scratch_object)
+            catr_sprite = self._scratch_object_converter(scratch_object, media_resource_set)
+            print(catr_sprite.getLookList()[0].fileName)
             catrobat_scene.addSprite(catr_sprite)
 
     def add_cursor_sprite_to(self, catrobat_scene, upcoming_sprites):
@@ -1002,13 +1007,14 @@ class _ScratchObjectConverter(object):
         # TODO: refactor static
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._scratch_project = scratch_project
+        _media_resources = set()
         self._progress_bar = progress_bar
         self._context = context
 
-    def __call__(self, scratch_object):
-        return self._catrobat_sprite_from(scratch_object)
+    def __call__(self, scratch_object, media_resource_set):
+        return self._catrobat_sprite_from(scratch_object, media_resource_set)
 
-    def _catrobat_sprite_from(self, scratch_object):
+    def _catrobat_sprite_from(self, scratch_object,media_resource_set):
         if not isinstance(scratch_object, scratch.Object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
         sprite_name = scratch_object.name
@@ -1042,10 +1048,10 @@ class _ScratchObjectConverter(object):
                 costume_resolution = current_costume_resolution
             elif current_costume_resolution != costume_resolution:
                 log.warning("Costume resolution not same for all costumes")
-            sprite_looks.add(self._catrobat_look_from(scratch_costume))
+            sprite_looks.add(self._catrobat_look_from(scratch_costume, media_resource_set))
         sprite_sounds = sprite.getSoundList()
         for scratch_sound in scratch_object.get_sounds():
-            sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
+            sprite_sounds.add(self._catrobat_sound_from(scratch_sound, media_resource_set))
 
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
@@ -1093,7 +1099,7 @@ class _ScratchObjectConverter(object):
         return sprite
 
     @staticmethod
-    def _catrobat_look_from(scratch_costume):
+    def _catrobat_look_from(scratch_costume, media_resource_set):
         if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
             raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
         look = catcommon.LookData()
@@ -1104,12 +1110,28 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
         costume_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
-        costume_resource_name = scratch_costume[scratchkeys.COSTUME_NAME]
-        look.fileName = (mediaconverter.catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
+
+        file_name, ext = os.path.splitext(costume_md5_filename)
+
+        new_file_name = file_name + "_#0" + ext
+
+        next_index = 1
+        while new_file_name in media_resource_set:
+            new_file_name = file_name + "_#" + str(next_index) + ext
+
+        media_resource_set.add(new_file_name)
+
+        look.fileName = new_file_name
+
+        #costume_resource_name = scratch_costume[scratchkeys.COSTUME_NAME]
+        #look.fileName = (mediaconverter.catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
+        # _, ext = os.path.splitext(costume_md5_filename)
+        # look.fileName = sprite_name + "_" + costume_name + ext
+        print("\t\t" + look.fileName)
         return look
 
     @staticmethod
-    def _catrobat_sound_from(scratch_sound):
+    def _catrobat_sound_from(scratch_sound, media_resource_set):
         soundinfo = catcommon.SoundInfo()
 
         assert scratchkeys.SOUND_NAME in scratch_sound
@@ -1118,8 +1140,25 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.SOUND_MD5 in scratch_sound
         sound_md5_filename = scratch_sound[scratchkeys.SOUND_MD5]
-        sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
-        soundinfo.fileName = (mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
+
+        file_name, ext = os.path.splitext(sound_md5_filename)
+
+        new_file_name = file_name + "_#0" + ext
+
+        next_index = 1
+        while new_file_name in media_resource_set:
+            new_file_name = file_name + "_#" + str(next_index) + ext
+
+        media_resource_set.add(new_file_name)
+
+        soundinfo.fileName = new_file_name
+
+
+        # sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
+        # soundinfo.fileName = (mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
+        # _, ext = os.path.splitext(sound_md5_filename)
+        # soundinfo.fileName = sprite_name + "_" + sound_name + ext
+        print("\t\t" + soundinfo.fileName)
         return soundinfo
 
     @staticmethod
@@ -1323,7 +1362,7 @@ class ConvertedProject(object):
             self.save_as_catrobat_directory_structure_to(catrobat_program_dir, progress_bar, context)
             common.makedirs(output_dir)
             archive_name = self.name if archive_name is None else archive_name
-            catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name)
+            catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name).encode("UTF-8")
             log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
             if os.path.exists(catrobat_zip_file_path):
                 os.remove(catrobat_zip_file_path)
