@@ -1118,6 +1118,7 @@ class _ScratchObjectConverter(object):
         next_index = 1
         while new_file_name in media_resource_set:
             new_file_name = file_name + "_#" + str(next_index) + ext
+            next_index += 1
 
         media_resource_set.add(new_file_name)
 
@@ -1148,6 +1149,7 @@ class _ScratchObjectConverter(object):
         next_index = 1
         while new_file_name in media_resource_set:
             new_file_name = file_name + "_#" + str(next_index) + ext
+            next_index += 1
 
         media_resource_set.add(new_file_name)
 
@@ -1362,7 +1364,7 @@ class ConvertedProject(object):
             self.save_as_catrobat_directory_structure_to(catrobat_program_dir, progress_bar, context)
             common.makedirs(output_dir)
             archive_name = self.name if archive_name is None else archive_name
-            catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name).encode("UTF-8")
+            catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name)
             log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
             if os.path.exists(catrobat_zip_file_path):
                 os.remove(catrobat_zip_file_path)

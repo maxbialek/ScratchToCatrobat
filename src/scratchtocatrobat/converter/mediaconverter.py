@@ -237,18 +237,24 @@ class MediaConverter(object):
         assert reference_index == resource_index and reference_index == num_total_resources
 
         converted_media_files_to_be_removed = set()
-        image_index, sound_index = [0], [0]
+        rename = {}
         for resource_info in all_used_resources:
             scratch_md5_name = resource_info["scratch_md5_name"]
 
-            # TODO: currently these names have to be encoded before printing -> encode them in the json!!!
-            # print(resource_info)
-            print(resource_info["object_name"].encode("UTF-8"))
-            print(resource_info["info"]["costumeName"].encode("UTF-8") if
-                  "costumeName" in resource_info["info"] else
-                  resource_info["info"]["soundName"].encode("UTF-8"))
+            # TODO: currently these names have to be encoded before printing
+            obj_name = resource_info["object_name"].encode("UTF-8")
+            file_name = resource_info["info"]["costumeName"].encode("UTF-8") if \
+                        "costumeName" in resource_info["info"] else \
+                        resource_info["info"]["soundName"].encode("UTF-8")
 
-            log.info(resource_info["object_name"])
+            fn, ext = os.path.splitext(scratch_md5_name)
+            mr_name = fn + "_#0" + ext
+            next_index = 1
+            while mr_name in rename:
+                mr_name = fn + "_#" + str(next_index) + ext
+                next_index += 1
+
+            rename[mr_name] = obj_name + "___" + file_name
 
             # check if path changed after conversion
             old_src_path = resource_info["src_path"]
@@ -290,28 +296,20 @@ class MediaConverter(object):
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
-            print("\t\t" + scratch_md5_name)
+            if resource_info["media_type"] in {MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV}:
+                old_name = mr_name
+                _, ext_conversed = os.path.splitext(src_path)
+                mr_name = os.path.splitext(mr_name)[0] + ext_conversed
+                self.renamed_files_map[old_name] = mr_name
 
-            self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
-                                  resource_info["media_type"], resource_info["object_name"],
-                                  image_index, sound_index)
+            shutil.copyfile(src_path, os.path.join(resource_info["dest_path"], mr_name))
 
-            if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
-                converted_media_files_to_be_removed.add(src_path)
+            #self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
+            #                      resource_info["media_type"], resource_info["object_name"],
+            #                      image_index, sound_index)
 
-        tmp = self.catrobat_program.getDefaultScene()
-        print(tmp)
-        tmp2 = tmp.getSpriteList()
-        print(tmp2)
-        for obj in tmp2:
-            tmp3 = obj.getLookList()
-            for look in tmp3:
-                print(look.fileName)
-            tmp4 = obj.getSoundList()
-            for sound in tmp4:
-                print(sound.fileName)
-
-        # print("^"*80)
+            # if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
+            #     converted_media_files_to_be_removed.add(src_path)
 
         self._update_file_names_of_converted_media_files()
 
