@@ -651,9 +651,6 @@ class Converter(object):
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
                                 scratch_project.name, scratch_project.instructions,
                                 scratch_project.notes_and_credits)
-
-        print("\t" +_catr_project.getDefaultScene().getSpriteList()[0].getLookList()[0].fileName)
-
         return _catr_project
 
     def _add_global_user_lists_to(self, catrobat_scene):
@@ -669,7 +666,6 @@ class Converter(object):
         media_resource_set = set()
         for scratch_object in self.scratch_project.objects:
             catr_sprite = self._scratch_object_converter(scratch_object, media_resource_set)
-            print(catr_sprite.getLookList()[0].fileName)
             catrobat_scene.addSprite(catr_sprite)
 
     def add_cursor_sprite_to(self, catrobat_scene, upcoming_sprites):
@@ -1114,21 +1110,13 @@ class _ScratchObjectConverter(object):
         file_name, ext = os.path.splitext(costume_md5_filename)
 
         new_file_name = file_name + "_#0" + ext
-
         next_index = 1
         while new_file_name in media_resource_set:
             new_file_name = file_name + "_#" + str(next_index) + ext
             next_index += 1
 
         media_resource_set.add(new_file_name)
-
         look.fileName = new_file_name
-
-        #costume_resource_name = scratch_costume[scratchkeys.COSTUME_NAME]
-        #look.fileName = (mediaconverter.catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
-        # _, ext = os.path.splitext(costume_md5_filename)
-        # look.fileName = sprite_name + "_" + costume_name + ext
-        print("\t\t" + look.fileName)
         return look
 
     @staticmethod
@@ -1145,22 +1133,13 @@ class _ScratchObjectConverter(object):
         file_name, ext = os.path.splitext(sound_md5_filename)
 
         new_file_name = file_name + "_#0" + ext
-
         next_index = 1
         while new_file_name in media_resource_set:
             new_file_name = file_name + "_#" + str(next_index) + ext
             next_index += 1
 
         media_resource_set.add(new_file_name)
-
         soundinfo.fileName = new_file_name
-
-
-        # sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
-        # soundinfo.fileName = (mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
-        # _, ext = os.path.splitext(sound_md5_filename)
-        # soundinfo.fileName = sprite_name + "_" + sound_name + ext
-        print("\t\t" + soundinfo.fileName)
         return soundinfo
 
     @staticmethod

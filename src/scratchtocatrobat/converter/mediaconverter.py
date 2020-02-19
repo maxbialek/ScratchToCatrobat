@@ -97,28 +97,6 @@ class MediaConverter(object):
         self.sounds_path = sounds_path
         self.renamed_files_map = {}
 
-        tmp = self.catrobat_program.getDefaultScene()
-        print(tmp)
-        tmp2 = tmp.getSpriteList()
-        print(tmp2)
-        for obj in tmp2:
-            tmp3 = obj.getLookList()
-            for look in tmp3:
-                print(look.fileName)
-            tmp4 = obj.getSoundList()
-            for sound in tmp4:
-                print(sound.fileName)
-
-        '''sprite_list = self.catrobat_program.getDefaultScene().getSpriteList()
-        look_list = self.catrobat_program.getDefaultScene().getSpriteList().getLookList()
-        sound_list = self.catrobat_program.getDefaultScene().getSpriteList().getSoundList()
-        print("#"*80)
-        for look in look_list:
-            print(look.fileName)
-
-        print("#"*80)
-        for sound in sound_list:
-            print(sound.fileName)'''
 
     def convert(self, progress_bar = None):
         all_used_resources = []
@@ -136,7 +114,7 @@ class MediaConverter(object):
 
         for scratch_object in self.scratch_project.objects:
             project_base_path = self.scratch_project.project_base_path
-            object_name = scratch_object.name
+            object_name = scratch_object.name  # probably relevant for naming of media resources
             for costume_info in scratch_object.get_costumes():
                 costume_file_name = costume_info[JsonKeys.COSTUME_MD5]
                 costume_src_path = os.path.join(project_base_path, costume_file_name)
@@ -153,7 +131,7 @@ class MediaConverter(object):
                 is_unconverted = file_ext == ".svg"
 
                 resource_info = {
-                    "object_name": object_name,
+                    "object_name": object_name,  # might as well put this in "info"
                     "scratch_md5_name": costume_file_name,
                     "src_path": costume_src_path,
                     "dest_path": self.images_path,
@@ -236,25 +214,18 @@ class MediaConverter(object):
             resource_index = next_resources_end_index
         assert reference_index == resource_index and reference_index == num_total_resources
 
-        converted_media_files_to_be_removed = set()
-        rename = {}
+        check_duplicate_map = set()
         for resource_info in all_used_resources:
             scratch_md5_name = resource_info["scratch_md5_name"]
 
-            # TODO: currently these names have to be encoded before printing
-            obj_name = resource_info["object_name"].encode("UTF-8")
-            file_name = resource_info["info"]["costumeName"].encode("UTF-8") if \
-                        "costumeName" in resource_info["info"] else \
-                        resource_info["info"]["soundName"].encode("UTF-8")
-
             fn, ext = os.path.splitext(scratch_md5_name)
-            mr_name = fn + "_#0" + ext
+            media_file_name = fn + "_#0" + ext
             next_index = 1
-            while mr_name in rename:
-                mr_name = fn + "_#" + str(next_index) + ext
+            while media_file_name in check_duplicate_map:
+                media_file_name = fn + "_#" + str(next_index) + ext
                 next_index += 1
 
-            rename[mr_name] = obj_name + "___" + file_name
+            check_duplicate_map.add(media_file_name)
 
             # check if path changed after conversion
             old_src_path = resource_info["src_path"]
@@ -296,13 +267,16 @@ class MediaConverter(object):
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
+            # rename with correct extension -> function?
             if resource_info["media_type"] in {MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV}:
-                old_name = mr_name
-                _, ext_conversed = os.path.splitext(src_path)
-                mr_name = os.path.splitext(mr_name)[0] + ext_conversed
-                self.renamed_files_map[old_name] = mr_name
+                old_name = media_file_name
+                _, ext_converted = os.path.splitext(src_path)
+                media_file_name = os.path.splitext(old_name)[0] + ext_converted
+                self.renamed_files_map[old_name] = media_file_name
 
-            shutil.copyfile(src_path, os.path.join(resource_info["dest_path"], mr_name))
+            print(media_file_name)
+
+            shutil.copyfile(src_path, os.path.join(resource_info["dest_path"], media_file_name))
 
             #self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
             #                      resource_info["media_type"], resource_info["object_name"],
@@ -313,21 +287,8 @@ class MediaConverter(object):
 
         self._update_file_names_of_converted_media_files()
 
-        '''tmp = self.catrobat_program.getDefaultScene()
-        print(tmp)
-        tmp2 = tmp.getSpriteList()
-        print(tmp2)
-        for obj in tmp2:
-            tmp3 = obj.getLookList()
-            for look in tmp3:
-                print(look.fileName)
-            tmp4 = obj.getSoundList()
-            for sound in tmp4:
-                print(sound.fileName)'''
-
-
-        for media_file_to_be_removed in converted_media_files_to_be_removed:
-            os.remove(media_file_to_be_removed)
+        # for media_file_to_be_removed in converted_media_files_to_be_removed:
+        #     os.remove(media_file_to_be_removed)
 
 
     def _update_file_names_of_converted_media_files(self):
