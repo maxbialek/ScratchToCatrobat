@@ -267,9 +267,6 @@ class MediaConverter(object):
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
-            # print("Before:")
-            # print(media_file_name)
-
             # rename with correct extension -> function?
             if resource_info["media_type"] in {MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV}:
                 old_name = media_file_name
@@ -277,10 +274,6 @@ class MediaConverter(object):
                 media_file_name = os.path.splitext(old_name)[0] + ext_converted
                 self.renamed_files_map[old_name] = media_file_name
 
-            # print("After:")
-            # print(media_file_name)
-
-            print(media_file_name)
             if resource_info["media_type"] in {MediaType.UNCONVERTED_WAV, MediaType.AUDIO}:
                 costume_name_or_sound_file_name = resource_info["info"]["soundName"]
             else:
@@ -307,9 +300,14 @@ class MediaConverter(object):
             # if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
             #     converted_media_files_to_be_removed.add(src_path)
 
-        print("path help map")
-        for i, j in path_help.iteritems():
-            print(i + (60 - len(i))*" " + j)
+
+        onlyfiles = [f for f in os.listdir(self.images_path) if os.path.isfile(os.path.join(self.images_path, f))]
+        for x in onlyfiles:
+            print(x)
+
+
+        for x in catrobat.media_objects_in(self.catrobat_program):
+            print(x.fileName)
 
         self._update_file_names_of_converted_media_files()
         self.update_new_names(path_help)
@@ -331,6 +329,8 @@ class MediaConverter(object):
         print("info names")
         img_idx, snd_idx = 0, 0
         for info in catrobat.media_objects_in(self.catrobat_program):
+            if "key" in info.fileName:
+                continue
             head, tail = os.path.split(path_help[info.fileName])
             _, ext = os.path.splitext(tail)
             if ext != ".wav":

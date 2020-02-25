@@ -108,7 +108,7 @@ def _placeholder_for_unmapped_blocks_to(*args):
     return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))
 
 def _key_to_broadcast_message(key_name):
-    return "key " + key_name + " pressed"
+    return "key_" + key_name + "_pressed"
 
 def _get_existing_sprite_with_name(sprite_list, name):
     for sprite in sprite_list:
@@ -572,8 +572,9 @@ def _mouse_image_path():
 def _key_filename_for(key):
     assert key is not None
     key_path = _key_image_path_for(key)
+    _, ext = os.path.splitext(key_path)
     # TODO: extract method, already used once
-    return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
+    return _key_to_broadcast_message(key) + ext
 
 def _generate_mouse_filename():
     mouse_path = _mouse_image_path()
