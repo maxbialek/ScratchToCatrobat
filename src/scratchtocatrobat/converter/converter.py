@@ -577,13 +577,12 @@ def _key_filename_for(key):
     assert key is not None
     key_path = _key_image_path_for(key)
     # TODO: extract method, already used once
-    # return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
     _, ext = os.path.splitext(key_path)
     return _key_to_broadcast_message(key) + ext
 
 def _generate_mouse_filename():
     mouse_path = _mouse_image_path()
-    return common.md5_hash(mouse_path) + "_" + MOUSE_SPRITE_FILENAME
+    return MOUSE_SPRITE_FILENAME
 
 def generated_variable_name(variable_name):
     return _GENERATED_VARIABLE_PREFIX + variable_name
