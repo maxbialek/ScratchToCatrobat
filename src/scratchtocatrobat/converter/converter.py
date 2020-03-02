@@ -108,7 +108,7 @@ def _placeholder_for_unmapped_blocks_to(*args):
     return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))
 
 def _key_to_broadcast_message(key_name):
-    return "key " + key_name + " pressed"
+    return "key_" + key_name + "_pressed"
 
 def _get_existing_sprite_with_name(sprite_list, name):
     for sprite in sprite_list:
@@ -577,7 +577,9 @@ def _key_filename_for(key):
     assert key is not None
     key_path = _key_image_path_for(key)
     # TODO: extract method, already used once
-    return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
+    # return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
+    _, ext = os.path.splitext(key_path)
+    return _key_to_broadcast_message(key) + ext
 
 def _generate_mouse_filename():
     mouse_path = _mouse_image_path()
@@ -668,8 +670,9 @@ class Converter(object):
             catrobat_scene.project.userLists.add(global_user_list)
 
     def _add_converted_sprites_to(self, catrobat_scene):
+        duplicate_file_name_set = set()
         for scratch_object in self.scratch_project.objects:
-            catr_sprite = self._scratch_object_converter(scratch_object)
+            catr_sprite = self._scratch_object_converter(scratch_object, duplicate_file_name_set)
             catrobat_scene.addSprite(catr_sprite)
 
     def add_cursor_sprite_to(self, catrobat_scene, upcoming_sprites):
@@ -1010,10 +1013,10 @@ class _ScratchObjectConverter(object):
         self._progress_bar = progress_bar
         self._context = context
 
-    def __call__(self, scratch_object):
-        return self._catrobat_sprite_from(scratch_object)
+    def __call__(self, scratch_object, duplicate_file_name_set):
+        return self._catrobat_sprite_from(scratch_object, duplicate_file_name_set)
 
-    def _catrobat_sprite_from(self, scratch_object):
+    def _catrobat_sprite_from(self, scratch_object, duplicate_file_name_set):
         if not isinstance(scratch_object, scratch.Object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
         sprite_name = scratch_object.name
@@ -1047,10 +1050,10 @@ class _ScratchObjectConverter(object):
                 costume_resolution = current_costume_resolution
             elif current_costume_resolution != costume_resolution:
                 log.warning("Costume resolution not same for all costumes")
-            sprite_looks.add(self._catrobat_look_from(scratch_costume))
+            sprite_looks.add(self._catrobat_look_from(scratch_costume, duplicate_file_name_set))
         sprite_sounds = sprite.getSoundList()
         for scratch_sound in scratch_object.get_sounds():
-            sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
+            sprite_sounds.add(self._catrobat_sound_from(scratch_sound, duplicate_file_name_set))
 
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
@@ -1103,7 +1106,7 @@ class _ScratchObjectConverter(object):
         return sprite
 
     @staticmethod
-    def _catrobat_look_from(scratch_costume):
+    def _catrobat_look_from(scratch_costume, duplicate_file_name_set):
         if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
             raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
         look = catcommon.LookData()
@@ -1114,12 +1117,18 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
         costume_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
-        costume_resource_name = scratch_costume[scratchkeys.COSTUME_NAME]
-        look.fileName = (mediaconverter.catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
+        file_name, ext = os.path.splitext(costume_md5_filename)
+        final_file_name = file_name + "_#0" + ext
+        img_idx = 1
+        while final_file_name in duplicate_file_name_set:
+            final_file_name = file_name + "_#" + str(img_idx) + ext
+            img_idx += 1
+        duplicate_file_name_set.add(final_file_name)
+        look.fileName = final_file_name
         return look
 
     @staticmethod
-    def _catrobat_sound_from(scratch_sound):
+    def _catrobat_sound_from(scratch_sound, duplicate_file_name_set):
         soundinfo = catcommon.SoundInfo()
 
         assert scratchkeys.SOUND_NAME in scratch_sound
@@ -1128,8 +1137,14 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.SOUND_MD5 in scratch_sound
         sound_md5_filename = scratch_sound[scratchkeys.SOUND_MD5]
-        sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
-        soundinfo.fileName = (mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
+        file_name, ext = os.path.splitext(sound_md5_filename)
+        final_file_name = file_name + "_#0" + ext
+        snd_idx = 1
+        while final_file_name in duplicate_file_name_set:
+            final_file_name = file_name + "_#" + str(snd_idx) + ext
+            snd_idx += 1
+        duplicate_file_name_set.add(final_file_name)
+        soundinfo.fileName = final_file_name
         return soundinfo
 
     @staticmethod
