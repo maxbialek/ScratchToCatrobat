@@ -577,13 +577,11 @@ def _key_filename_for(key):
     assert key is not None
     key_path = _key_image_path_for(key)
     # TODO: extract method, already used once
-    # return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
     _, ext = os.path.splitext(key_path)
     return _key_to_broadcast_message(key) + ext
 
-def _generate_mouse_filename():
-    mouse_path = _mouse_image_path()
-    return common.md5_hash(mouse_path) + "_" + MOUSE_SPRITE_FILENAME
+def _get_mouse_filename():
+    return MOUSE_SPRITE_FILENAME
 
 def generated_variable_name(variable_name):
     return _GENERATED_VARIABLE_PREFIX + variable_name
@@ -670,6 +668,7 @@ class Converter(object):
             catrobat_scene.project.userLists.add(global_user_list)
 
     def _add_converted_sprites_to(self, catrobat_scene):
+        # avoid duplicate file names -> extend with unique identifier
         duplicate_file_name_set = set()
         for scratch_object in self.scratch_project.objects:
             catr_sprite = self._scratch_object_converter(scratch_object, duplicate_file_name_set)
@@ -687,7 +686,7 @@ class Converter(object):
 
         look = catcommon.LookData()
         look.setName(MOUSE_SPRITE_NAME)
-        mouse_filename = _generate_mouse_filename()
+        mouse_filename = _get_mouse_filename()
         look.fileName = mouse_filename
         sprite.getLookList().add(look)
 
@@ -1116,15 +1115,9 @@ class _ScratchObjectConverter(object):
         look.setName(costume_name)
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
-        costume_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
-        file_name, ext = os.path.splitext(costume_md5_filename)
-        final_file_name = file_name + "_#0" + ext
-        img_idx = 1
-        while final_file_name in duplicate_file_name_set:
-            final_file_name = file_name + "_#" + str(img_idx) + ext
-            img_idx += 1
-        duplicate_file_name_set.add(final_file_name)
-        look.fileName = final_file_name
+        image_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
+        catrobat_md5_file = helpers.create_catrobat_md5_file_name(image_md5_filename, duplicate_file_name_set)
+        look.fileName = catrobat_md5_file
         return look
 
     @staticmethod
@@ -1137,14 +1130,8 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.SOUND_MD5 in scratch_sound
         sound_md5_filename = scratch_sound[scratchkeys.SOUND_MD5]
-        file_name, ext = os.path.splitext(sound_md5_filename)
-        final_file_name = file_name + "_#0" + ext
-        snd_idx = 1
-        while final_file_name in duplicate_file_name_set:
-            final_file_name = file_name + "_#" + str(snd_idx) + ext
-            snd_idx += 1
-        duplicate_file_name_set.add(final_file_name)
-        soundinfo.fileName = final_file_name
+        catrobat_md5_file = helpers.create_catrobat_md5_file_name(sound_md5_filename, duplicate_file_name_set)
+        soundinfo.fileName = catrobat_md5_file
         return soundinfo
 
     @staticmethod
@@ -1407,7 +1394,7 @@ class ConvertedProject(object):
             for sprite in catrobat_program.getDefaultScene().spriteList:
                 if sprite.name == MOUSE_SPRITE_NAME:
                     mouse_img_path = _mouse_image_path()
-                    shutil.copyfile(mouse_img_path, os.path.join(images_path, _generate_mouse_filename()))
+                    shutil.copyfile(mouse_img_path, os.path.join(images_path, _get_mouse_filename()))
                     break
 
         def download_automatic_screenshot_if_available(output_dir, scratch_project):
