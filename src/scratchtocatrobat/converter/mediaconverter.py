@@ -60,10 +60,6 @@ def catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
     return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name.replace("/",'') + resource_ext)
 
 
-def _resource_name_for(file_path):
-    return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
-
-
 class _MediaResourceConverterThread(Thread):
 
     def run(self):
@@ -295,19 +291,6 @@ class MediaConverter(object):
 
             for info in look_data_or_sound_infos:
                 info.fileName = new_file_name
-
-
-    def _copy_media_file(self, scratch_md5_name, src_path, dest_path, media_type):
-        # for Catrobat separate file is needed for resources which are used multiple times but with different names
-        for scratch_resource_name in self.scratch_project.find_all_resource_names_for(scratch_md5_name):
-            new_file_name = catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
-            if media_type in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
-                old_file_name = new_file_name
-                converted_scratch_md5_name = _resource_name_for(src_path)
-                new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
-                                                                scratch_resource_name)
-                self.renamed_files_map[old_file_name] = new_file_name
-            shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
     def _update_new_file_names(self, file_name_to_path_map):
         img_idx, snd_idx = 0, 0

@@ -580,8 +580,7 @@ def _key_filename_for(key):
     _, ext = os.path.splitext(key_path)
     return _key_to_broadcast_message(key) + ext
 
-def _generate_mouse_filename():
-    mouse_path = _mouse_image_path()
+def _get_mouse_filename():
     return MOUSE_SPRITE_FILENAME
 
 def generated_variable_name(variable_name):
@@ -686,7 +685,7 @@ class Converter(object):
 
         look = catcommon.LookData()
         look.setName(MOUSE_SPRITE_NAME)
-        mouse_filename = _generate_mouse_filename()
+        mouse_filename = _get_mouse_filename()
         look.fileName = mouse_filename
         sprite.getLookList().add(look)
 
@@ -1406,7 +1405,7 @@ class ConvertedProject(object):
             for sprite in catrobat_program.getDefaultScene().spriteList:
                 if sprite.name == MOUSE_SPRITE_NAME:
                     mouse_img_path = _mouse_image_path()
-                    shutil.copyfile(mouse_img_path, os.path.join(images_path, _generate_mouse_filename()))
+                    shutil.copyfile(mouse_img_path, os.path.join(images_path, _get_mouse_filename()))
                     break
 
         def download_automatic_screenshot_if_available(output_dir, scratch_project):
