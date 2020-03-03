@@ -122,7 +122,7 @@ class MediaConverter(object):
 
                 assert os.path.exists(costume_src_path), "Not existing: {}".format(costume_src_path)
                 assert file_ext in {".png", ".svg", ".jpg", ".gif"}, \
-                       "Unsupported image file extension: %s" % costume_src_path
+                    "Unsupported image file extension: %s" % costume_src_path
                 ispng = file_ext == ".png"
                 is_unconverted = file_ext == ".svg"
 
@@ -208,18 +208,21 @@ class MediaConverter(object):
             resource_index = next_resources_end_index
         assert reference_index == resource_index and reference_index == num_total_resources
 
-        converted_files_to_be_removed = set()
-        file_name_to_path_map = {}
-        duplicate_file_set = set()
-        for resource_info in all_used_resources:
-            # reconstruct catrobat resource file names
-            scratch_md5_name = resource_info["scratch_md5_name"]
+        def reconstruct_catrobat_media_file(scratch_md5_name, duplicate_file_set):
             file_name, ext = os.path.splitext(scratch_md5_name)
             current_file = file_name + "_#0" + ext
             next_index = 1
             while current_file in duplicate_file_set:
                 current_file = file_name + "_#" + str(next_index) + ext
                 next_index += 1
+            return current_file
+
+        converted_files_to_be_removed = set()
+        duplicate_file_set = set()
+        rename_map = {}
+        for resource_info in all_used_resources:
+            # reconstruct catrobat media file names -> catrobat.media_objects_in(self.catrobat_program)
+            current_file = reconstruct_catrobat_media_file(resource_info["scratch_md5_name"], duplicate_file_set)
             duplicate_file_set.add(current_file)
 
             # check if path changed after conversion
@@ -263,50 +266,59 @@ class MediaConverter(object):
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
             if resource_info["media_type"] in {MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV}:
-                old_file = current_file
-                _, ext_converted = os.path.splitext(src_path)
-                old_file_name, _ = os.path.splitext(old_file)
-                current_file = old_file_name + ext_converted
-                self.renamed_files_map[old_file] = current_file
                 converted_files_to_be_removed.add(src_path)
 
-            new_file_path = os.path.join(resource_info["dest_path"], current_file)
-            shutil.copyfile(src_path, new_file_path)
-            file_name_to_path_map[current_file] = new_file_path
+            current_file_name, _ = os.path.splitext(current_file)
+            rename_map[current_file_name] = {}
+            rename_map[current_file_name]["src_path"] = src_path
+            rename_map[current_file_name]["dst_path"] = resource_info["dest_path"]
 
-        self._update_file_names_of_converted_media_files()
-        self._update_new_file_names(file_name_to_path_map)
+        self.rename_media_files_and_copy(rename_map)
 
         # delete converted png files -> only temporary saved in folder of scratch project
         for media_file_to_be_removed in converted_files_to_be_removed:
             os.remove(media_file_to_be_removed)
 
+    def rename_media_files_and_copy(self, rename_map):
+        class MediaFileIndex:
+            def __init__(self):
+                self.img_idx = 0
+                self.snd_idx = 0
 
+            def increment_image_index(self):
+                self.img_idx += 1
 
-    def _update_file_names_of_converted_media_files(self):
-        for (old_file_name, new_file_name) in self.renamed_files_map.iteritems():
-            look_data_or_sound_infos = filter(lambda info: info.fileName == old_file_name,
-                                      catrobat.media_objects_in(self.catrobat_program))
-            assert len(look_data_or_sound_infos) == 1  # should always be exactly one item
+            def increment_sound_index(self):
+                self.snd_idx += 1
 
-            for info in look_data_or_sound_infos:
-                info.fileName = new_file_name
+            def assign_image_index(self):
+                current_image_index = self.img_idx
+                self.increment_image_index()
+                return current_image_index
 
-    def _update_new_file_names(self, file_name_to_path_map):
-        img_idx, snd_idx = 0, 0
-        for info in catrobat.media_objects_in(self.catrobat_program):
-            if "key" in info.fileName:  # ignore key_pressed sprites, they already have the correct name
-                continue
-            head, tail = os.path.split(file_name_to_path_map[info.fileName])
-            _, ext = os.path.splitext(tail)
+            def assign_sound_index(self):
+                current_sound_index = self.snd_idx
+                self.increment_sound_index()
+                return current_sound_index
+
+        def create_new_file_name(src_path_file, media_file_index):
+            _, ext = os.path.splitext(src_path_file)
             if ext != ".wav":
-                new_file_name = "img_#" + str(img_idx) + ext
-                img_idx += 1
+                return "img_#" + str(media_file_index.assign_image_index()) + ext
             else:
-                new_file_name = "snd_#" + str(snd_idx) + ext
-                snd_idx += 1
-            new_file_path = head + "/" + new_file_name
-            os.rename(file_name_to_path_map[info.fileName], new_file_path)
+                return "snd_#" + str(media_file_index.assign_sound_index()) + ext
+
+        media_file_index = MediaFileIndex()
+        for info in catrobat.media_objects_in(self.catrobat_program):
+            file_name, _ = os.path.splitext(info.fileName)
+            if "key" in file_name or "mouse" in file_name:  # ignore these files, already correct format
+                continue
+
+            src_path_file = rename_map[file_name]["src_path"]
+            dst_path_directory = rename_map[file_name]["dst_path"]
+
+            new_file_name = create_new_file_name(src_path_file, media_file_index)
+            shutil.copyfile(src_path_file, os.path.join(dst_path_directory, new_file_name))
             info.fileName = new_file_name
 
     def resize_png(self, path_in, path_out, bitmapResolution):
