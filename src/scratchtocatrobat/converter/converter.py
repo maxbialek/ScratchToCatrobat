@@ -668,6 +668,7 @@ class Converter(object):
             catrobat_scene.project.userLists.add(global_user_list)
 
     def _add_converted_sprites_to(self, catrobat_scene):
+        # avoid duplicate file names -> extend with unique identifier
         duplicate_file_name_set = set()
         for scratch_object in self.scratch_project.objects:
             catr_sprite = self._scratch_object_converter(scratch_object, duplicate_file_name_set)
@@ -1114,8 +1115,8 @@ class _ScratchObjectConverter(object):
         look.setName(costume_name)
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
-        scracth_md5_file = scratch_costume[scratchkeys.COSTUME_MD5]
-        catrobat_md5_file = helpers.create_catrobat_md5_file_name(scracth_md5_file, duplicate_file_name_set)
+        image_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
+        catrobat_md5_file = helpers.create_catrobat_md5_file_name(image_md5_filename, duplicate_file_name_set)
         look.fileName = catrobat_md5_file
         return look
 
