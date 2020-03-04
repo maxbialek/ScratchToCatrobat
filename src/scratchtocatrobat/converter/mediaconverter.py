@@ -208,21 +208,12 @@ class MediaConverter(object):
             resource_index = next_resources_end_index
         assert reference_index == resource_index and reference_index == num_total_resources
 
-        def reconstruct_catrobat_media_file(scratch_md5_name, duplicate_file_set):
-            file_name, ext = os.path.splitext(scratch_md5_name)
-            current_file = file_name + "_#0" + ext
-            next_index = 1
-            while current_file in duplicate_file_set:
-                current_file = file_name + "_#" + str(next_index) + ext
-                next_index += 1
-            return current_file
-
         converted_files_to_be_removed = set()
         duplicate_file_set = set()
         rename_map = {}
         for resource_info in all_used_resources:
             # reconstruct catrobat media file names -> catrobat.media_objects_in(self.catrobat_program)
-            current_file = reconstruct_catrobat_media_file(resource_info["scratch_md5_name"], duplicate_file_set)
+            current_file = helpers.create_catrobat_md5_file_name(resource_info["scratch_md5_name"], duplicate_file_set)
             duplicate_file_set.add(current_file)
 
             # check if path changed after conversion
@@ -265,13 +256,13 @@ class MediaConverter(object):
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
-            if resource_info["media_type"] in {MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV}:
-                converted_files_to_be_removed.add(src_path)
-
             current_file_name, _ = os.path.splitext(current_file)
             rename_map[current_file_name] = {}
             rename_map[current_file_name]["src_path"] = src_path
             rename_map[current_file_name]["dst_path"] = resource_info["dest_path"]
+
+            if resource_info["media_type"] in {MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV}:
+                converted_files_to_be_removed.add(src_path)
 
         self.rename_media_files_and_copy(rename_map)
 
@@ -279,44 +270,25 @@ class MediaConverter(object):
         for media_file_to_be_removed in converted_files_to_be_removed:
             os.remove(media_file_to_be_removed)
 
+    # rename the media files and copy them to the catrobat project
     def rename_media_files_and_copy(self, rename_map):
-        class MediaFileIndex:
-            def __init__(self):
-                self.img_idx = 0
-                self.snd_idx = 0
 
-            def increment_image_index(self):
-                self.img_idx += 1
-
-            def increment_sound_index(self):
-                self.snd_idx += 1
-
-            def assign_image_index(self):
-                current_image_index = self.img_idx
-                self.increment_image_index()
-                return current_image_index
-
-            def assign_sound_index(self):
-                current_sound_index = self.snd_idx
-                self.increment_sound_index()
-                return current_sound_index
-
-        def create_new_file_name(src_path_file, media_file_index):
-            _, ext = os.path.splitext(src_path_file)
+        def create_new_file_name(provided_file, index_handler):
+            _, ext = os.path.splitext(provided_file)
             if ext != ".wav":
-                return "img_#" + str(media_file_index.assign_image_index()) + ext
+                return "img_#" + str(index_handler.assign_image_index()) + ext
             else:
-                return "snd_#" + str(media_file_index.assign_sound_index()) + ext
+                return "snd_#" + str(index_handler.assign_sound_index()) + ext
 
-        media_file_index = MediaFileIndex()
+        media_file_index = helpers.MediaFileIndex()
         for info in catrobat.media_objects_in(self.catrobat_program):
             file_name, _ = os.path.splitext(info.fileName)
-            if "key" in file_name or "mouse" in file_name:  # ignore these files, already correct format
+
+            # ignore these files, already correctly provided by the converter
+            if "key" in file_name or "mouse" in file_name:
                 continue
 
-            src_path_file = rename_map[file_name]["src_path"]
-            dst_path_directory = rename_map[file_name]["dst_path"]
-
+            src_path_file, dst_path_directory = rename_map[file_name]["src_path"], rename_map[file_name]["dst_path"]
             new_file_name = create_new_file_name(src_path_file, media_file_index)
             shutil.copyfile(src_path_file, os.path.join(dst_path_directory, new_file_name))
             info.fileName = new_file_name

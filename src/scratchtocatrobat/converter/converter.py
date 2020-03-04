@@ -1114,15 +1114,9 @@ class _ScratchObjectConverter(object):
         look.setName(costume_name)
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
-        costume_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
-        file_name, ext = os.path.splitext(costume_md5_filename)
-        final_file_name = file_name + "_#0" + ext
-        img_idx = 1
-        while final_file_name in duplicate_file_name_set:
-            final_file_name = file_name + "_#" + str(img_idx) + ext
-            img_idx += 1
-        duplicate_file_name_set.add(final_file_name)
-        look.fileName = final_file_name
+        scracth_md5_file = scratch_costume[scratchkeys.COSTUME_MD5]
+        catrobat_md5_file = helpers.create_catrobat_md5_file_name(scracth_md5_file, duplicate_file_name_set)
+        look.fileName = catrobat_md5_file
         return look
 
     @staticmethod
@@ -1135,14 +1129,8 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.SOUND_MD5 in scratch_sound
         sound_md5_filename = scratch_sound[scratchkeys.SOUND_MD5]
-        file_name, ext = os.path.splitext(sound_md5_filename)
-        final_file_name = file_name + "_#0" + ext
-        snd_idx = 1
-        while final_file_name in duplicate_file_name_set:
-            final_file_name = file_name + "_#" + str(snd_idx) + ext
-            snd_idx += 1
-        duplicate_file_name_set.add(final_file_name)
-        soundinfo.fileName = final_file_name
+        catrobat_md5_file = helpers.create_catrobat_md5_file_name(sound_md5_filename, duplicate_file_name_set)
+        soundinfo.fileName = catrobat_md5_file
         return soundinfo
 
     @staticmethod
