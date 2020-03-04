@@ -468,6 +468,7 @@ class ProgressBar(object):
 
 # create a unique name for a catrobat media file -> name derived from scratch md5-hash
 # since one file might be used for multiple objects, the md5-hash is extended with a unique identifier
+# name used until all files, converted or unconverted, are copied to the catrobat project directory
 def create_catrobat_md5_file_name(scratch_md5_name, duplicate_file_set):
     file_name, ext = os.path.splitext(scratch_md5_name)
     current_file = file_name + "_#0" + ext
