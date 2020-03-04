@@ -91,8 +91,6 @@ class MediaConverter(object):
         self.catrobat_program = catrobat_program
         self.images_path = images_path
         self.sounds_path = sounds_path
-        self.renamed_files_map = {}
-
 
     def convert(self, progress_bar = None):
         all_used_resources = []
