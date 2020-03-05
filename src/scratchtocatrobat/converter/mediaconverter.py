@@ -287,7 +287,6 @@ class MediaConverter(object):
 
             src_path_file = self.renamed_files_map[file_name]["src_path"]
             dst_path_directory = self.renamed_files_map[file_name]["dst_path"]
-
             new_file_name = create_new_file_name(src_path_file, media_file_index)
             shutil.copyfile(src_path_file, os.path.join(dst_path_directory, new_file_name))
             info.fileName = new_file_name
