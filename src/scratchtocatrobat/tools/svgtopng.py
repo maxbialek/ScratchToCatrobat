@@ -37,6 +37,8 @@ import xml.etree.cElementTree as ET
 import subprocess
 from threading import Lock
 
+global_ns_registry_lock = Lock()
+
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
 _batik_jar_path = None
@@ -52,7 +54,7 @@ def _checked_batik_jar_path():
     return _batik_jar_path
 
 
-def convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock):
+def convert(input_svg_path, rotation_x, rotation_y):
     assert isinstance(input_svg_path, (str, unicode))
     assert os.path.splitext(input_svg_path)[1] == ".svg"
 
@@ -75,7 +77,7 @@ def convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock):
     png_ostream = None
     error = None
     try:
-        _parse_and_rewrite_svg_file(input_svg_path, output_svg_path, ns_registry_lock)
+        _parse_and_rewrite_svg_file(input_svg_path, output_svg_path)
         command = "svg2png"
         out = subprocess.check_output([command, output_svg_path, "-o", output_png_path])
         _log.info("      converting '%s' to Pocket Code compatible png '%s'",
@@ -197,19 +199,15 @@ def _create_buffered_image(image):
 
 
 
-def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path, ns_registry_lock):
+def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     tree = ET.parse(svg_input_path)
     namespaces = dict([node for _, node in ET.iterparse(svg_input_path,events=['start-ns'])])
-    print("namespaces")
-    print(namespaces)
     for prefix, uri in namespaces.items():
-        ns_registry_lock.acquire()
-        try:
-            ET.register_namespace(prefix, uri)
-            print(prefix)
-            print(uri)
-        finally:
-            ns_registry_lock.release()
+        # global_ns_registry_lock.acquire()
+        # try:
+        ET.register_namespace(prefix, uri)
+        # finally:
+            # global_ns_registry_lock.release()
     root = tree.getroot()
 
     #exception is thrown if height or width is less or equal zero

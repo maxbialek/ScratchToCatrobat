@@ -26,10 +26,6 @@ import unittest
 from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import helpers
-from threading import Lock
-
-ns_registry_lock = Lock()
-
 
 class SvgToPngTest(common_testing.BaseTestCase):
 
@@ -53,7 +49,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
         
         rotation_x, rotation_y = 36, 67
         
-        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
         
         from javax.imageio import ImageIO
         from java.io import File
@@ -80,7 +76,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
         
         rotation_x, rotation_y = 255, 180
         
-        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
         
         from javax.imageio import ImageIO
         from java.io import File
@@ -107,7 +103,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
         
         rotation_x, rotation_y = 53, 43
         
-        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
         
         from javax.imageio import ImageIO
         from java.io import File
@@ -137,7 +133,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
                                            str(rotation_x) + "_rotY_" + str(rotation_y) + 
                                            ".png")
         
-        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
 
         from javax.imageio import ImageIO
         from java.io import File
@@ -167,7 +163,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
                                            str(rotation_x) + "_rotY_" + str(rotation_y) + 
                                            ".png")
                 
-        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
 
         from javax.imageio import ImageIO
         from java.io import File
@@ -197,7 +193,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
                                            str(rotation_x) + "_rotY_" + str(rotation_y) + 
                                            ".png")
         
-        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
 
         from javax.imageio import ImageIO
         from java.io import File
@@ -227,7 +223,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
                                            str(rotation_x) + "_rotY_" + str(rotation_y) + 
                                            ".png")
         
-        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
 
         from javax.imageio import ImageIO
         from java.io import File

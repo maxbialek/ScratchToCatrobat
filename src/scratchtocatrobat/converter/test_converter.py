@@ -37,13 +37,9 @@ from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
-from threading import Lock
 
 BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
 BACKGROUND_ORIGINAL_NAME = "Stage"
-
-ns_registry_lock = Lock()
-
 
 def create_catrobat_sprite_stub(name=None):
     sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Dummy" if name is None else name)
@@ -2646,7 +2642,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             if re.search('.*}g', child.tag) != None:
                 if 'transform' in child.attrib:
                     assert(child.attrib['transform'] == "matrix(1.5902323722839355, 0, 0, 1.5902323722839355, -0.5, 0.5)")
-        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/3.svg","test/res/scratch/Wizard_Spells/3_changed.svg", ns_registry_lock)
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/3.svg","test/res/scratch/Wizard_Spells/3_changed.svg")
         tree = ET.parse("test/res/scratch/Wizard_Spells/3_changed.svg")
         root = tree.getroot()
         for child in root:
@@ -2661,7 +2657,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             if re.search('.*}text', child.tag) != None:
                 assert(child.attrib['x'] == '147.5')
                 assert(child.attrib['y'] == '146.1')
-        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/6.svg","test/res/scratch/Wizard_Spells/6_changed.svg", ns_registry_lock)
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/6.svg","test/res/scratch/Wizard_Spells/6_changed.svg")
         tree = ET.parse("test/res/scratch/Wizard_Spells/6_changed.svg")
         root = tree.getroot()
         for child in root:
