@@ -199,12 +199,15 @@ def _create_buffered_image(image):
 
 def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path, ns_registry_lock):
     tree = ET.parse(svg_input_path)
-
     namespaces = dict([node for _, node in ET.iterparse(svg_input_path,events=['start-ns'])])
+    print("namespaces")
+    print(namespaces)
     for prefix, uri in namespaces.items():
         ns_registry_lock.acquire()
         try:
             ET.register_namespace(prefix, uri)
+            print(prefix)
+            print(uri)
         finally:
             ns_registry_lock.release()
     root = tree.getroot()

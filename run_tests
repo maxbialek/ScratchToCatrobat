@@ -29,6 +29,7 @@ import subprocess
 import sys
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "src"))
 from scratchtocatrobat.tools import helpers
+from subprocess import Popen, PIPE
 
 data_dirs = helpers.config.get("PATHS", ["data", "logging", "output", "web_output", "tmp"])
 helpers.make_dir_if_not_exists(data_dirs)
@@ -74,7 +75,15 @@ for module in modules_under_test:
 
     if len(sys.argv) >= 3:
         exec_args += [sys.argv[2]]
-    exit_code = subprocess.call(exec_args, env=env)
+    # exit_code = subprocess.call(exec_args, env=env)
+    p = Popen(exec_args, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    output, err = p.communicate(b"input data that is passed to subprocess' stdin")
+    exit_code = p.returncode
+    print("#"*36 + " output " + "#"*36)
+    print(output)
+    print("#"*36 + " errors " + "#"*36)
+    print(err)
+
     if exit_code != 0:
         sys.exit(exit_code)
     print()
