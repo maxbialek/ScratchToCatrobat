@@ -193,9 +193,11 @@ def is_scratch3_project(scratch_project_dir):
             else:
                 return False
 
-def convert_to_scratch2_data(scratch_project_dir):
+def convert_to_scratch2_data(scratch_project_dir, project_id):
     parser = Scratch3Parser(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH", "code_file_name")), scratch_project_dir)
     scratch2Data = parser.parse_sprites()
+    if project_id is not None:  # workaround for missing project_id in scratch3 projects
+        scratch2Data['info']["projectID"] = project_id
     with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH", "code_file_name")), 'w') as json_file:
         json_file.flush()
         json.dump(scratch2Data, json_file, sort_keys=True, indent=4, separators=(',', ': '))
