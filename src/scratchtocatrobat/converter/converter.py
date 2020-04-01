@@ -2110,9 +2110,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
     def _convert_sound_and_wait_block(self):
         [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
+
+        if len(sound_list) == 0:
+            log.warning("NO SOUNDS AVAILABLE")
+            print(sound_name)
+            return catbricks.NoteBrick("The sound list is empty")
+
         sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
-        if not sound_data:
+        print(100*"#")
+        if isinstance(sound_name, catformula.FormulaElement):
+            log.warning("CONVERTER DOES NOT SUPPORT PARAMETER OF THE TYPE \"{}\"".format(sound_name.type))
+        elif not sound_data:
             log.warning("Sprite does not contain sound with name={}".format(sound_name))
+            log.warning("Using first sound in sound list instead, which is \"{}\"".format(sound_list[0].name))
+            sound_data = sound_list[0]
+
         play_sound_and_wait_brick = self.CatrobatClass()
         play_sound_and_wait_brick.setSound(sound_data)
         return play_sound_and_wait_brick
