@@ -2109,10 +2109,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
     def _convert_sound_and_wait_block(self):
-        [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
-        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
-        if not sound_data:
-            log.warning("Sprite does not contain sound with name={}".format(sound_name))
+        [sound_parameter], sound_list = self.arguments, self.sprite.getSoundList()
+
+        if len(sound_list) == 0:
+            log.warning("Conversion of the \"Play sound and wait\"-brick failed! The sound list is empty!")
+            return catbricks.NoteBrick("Conversion of the \"Play sound and wait\"-brick failed! The sound list is empty!")
+
+        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_parameter)
+        parameter_is_a_formula = isinstance(sound_parameter, catformula.FormulaElement)
+        if parameter_is_a_formula or not sound_data and not parameter_is_a_formula:
+            if parameter_is_a_formula:
+                log.warning("Pocket Code does not support parameters of the type \"{}\" for this brick!".format(sound_parameter.type))
+            elif not sound_data and not parameter_is_a_formula:
+                log.warning("Sprite does not contain sound with name={}".format(sound_parameter))
+            log.warning("Using the first sound from this sprite's sound list instead!")
+            sound_data = sound_list[0]
         play_sound_and_wait_brick = self.CatrobatClass()
         play_sound_and_wait_brick.setSound(sound_data)
         return play_sound_and_wait_brick
