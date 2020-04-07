@@ -237,6 +237,7 @@ class _ScratchToCatrobat(object):
         "gotoX:y:": catbricks.PlaceAtBrick,
         "gotoSpriteOrMouse:": catbricks.GoToBrick,
         "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
+        "glideTo:": None,
         "xpos:": catbricks.SetXBrick,
         "ypos:": catbricks.SetYBrick,
         "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,
@@ -2476,3 +2477,22 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(arg, (str, unicode)) or isinstance(arg, catformula.Formula):
             return self.CatrobatClass(arg)
         log.warn("Invalid argument for NoteBrick: " + arg)
+
+    @_register_handler(_block_name_to_handler_map, "glideTo:")
+    def _convert_glide_to_block(self):
+        print(100*"#")
+        print(self.arguments)
+        reg = re.compile(r'S2CC:pos_[x|y]_' + str(self.arguments[1]))
+        s = [x for x in self.project.userVariables if re.search(reg, x.name)]
+        assert len(s) == 2
+
+        x_pos = catformula.FormulaElement(catElementType.USER_VARIABLE, None, None)
+        x_pos.value = s[0].name
+
+        y_pos = catformula.FormulaElement(catElementType.USER_VARIABLE, None, None)
+        y_pos.value = s[1].name
+
+        secs = catrobat.create_formula_with_value(self.arguments[0])
+        print(secs)
+        print(100*"#")
+        return catbricks.GlideToBrick(catformula.Formula(x_pos), catformula.Formula(y_pos), secs)

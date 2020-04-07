@@ -238,7 +238,27 @@ class Object(common.DictAccessWrapper):
                 script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        def has_glide_to_sprite_script(block_list, all_sprite_names):
+            for block in block_list:
+                if isinstance(block, list) and block[0] == 'glideTo:' and block[-1] in all_sprite_names:
+                    return True
+                return False
+
+        def add_position_tracking_script(block_list, positions_needed_for_sprite_names):
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'glideTo:':
+                        positions_needed_for_sprite_names.add(block[-1])
+
+
+        for script in self.scripts:
+            if has_glide_to_sprite_script(script.blocks, all_sprite_names):
+                add_position_tracking_script(script.blocks, positions_needed_for_sprite_names)
+
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
+
+        print(positions_needed_for_sprite_names)
 
         ############################################################################################
         # of-block (getAttribute) workaround
