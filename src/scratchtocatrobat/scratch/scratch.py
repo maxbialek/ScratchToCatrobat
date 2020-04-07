@@ -258,8 +258,6 @@ class Object(common.DictAccessWrapper):
 
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
-        print(positions_needed_for_sprite_names)
-
         ############################################################################################
         # of-block (getAttribute) workaround
         ############################################################################################

@@ -2480,8 +2480,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "glideTo:")
     def _convert_glide_to_block(self):
-        print(100*"#")
-        print(self.arguments)
         reg = re.compile(r'S2CC:pos_[x|y]_' + str(self.arguments[1]))
         s = [x for x in self.project.userVariables if re.search(reg, x.name)]
         assert len(s) == 2
@@ -2493,6 +2491,4 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         y_pos.value = s[1].name
 
         secs = catrobat.create_formula_with_value(self.arguments[0])
-        print(secs)
-        print(100*"#")
         return catbricks.GlideToBrick(catformula.Formula(x_pos), catformula.Formula(y_pos), secs)
