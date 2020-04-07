@@ -314,6 +314,7 @@ class _ScratchToCatrobat(object):
         "timeAndDate": None,
         "touching:": None,
         "dragMode": None,
+        "distanceTo:": None,
 
         # clone
         "createCloneOf": catbricks.CloneBrick,
@@ -1925,6 +1926,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         draggable_fe = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.TRUE if self.arguments[0] == "draggable" else catformula.Functions.FALSE), None)
         set_brick = _create_variable_brick(draggable_fe, draggable_var, catbricks.SetVariableBrick)
         return [set_brick]
+
+    @_register_handler(_block_name_to_handler_map, "distanceTo:")
+    def _convert_distance_to_block(self):
+        [target_sprite] = self.arguments
+        print(target_sprite)
+
+        for x in self.project.userVariables:
+            print("\t\t" + x.name)
+
+        reg = re.compile(r'S2CC:pos_[x|y]_' + target_sprite)
+        variables = filter(reg.search())
+
+        formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None)
+        return formula_element
+
 
     @_register_handler(_block_name_to_handler_map, "doIf")
     def _convert_if_block(self):

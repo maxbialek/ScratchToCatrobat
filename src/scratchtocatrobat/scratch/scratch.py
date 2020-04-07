@@ -204,7 +204,7 @@ class Object(common.DictAccessWrapper):
                     return True
             return False
 
-        def replace_distance_to_object_blocks(block_list, positions_needed_for_sprite_names):
+        '''def replace_distance_to_object_blocks(block_list, positions_needed_for_sprite_names):
             new_block_list = []
             for block in block_list:
                 if isinstance(block, list):
@@ -230,14 +230,26 @@ class Object(common.DictAccessWrapper):
                         new_block_list += [replace_distance_to_object_blocks(block, positions_needed_for_sprite_names)]
                 else:
                     new_block_list += [block]
-            return new_block_list
+            return new_block_list'''
+
+        def add_position_tracking_script(block_list, positions_needed_for_sprite_names):
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'distanceTo:':
+                        positions_needed_for_sprite_names.add(block[1])
+                        if block[1] == "_mouse_":
+                            workaround_info[ADD_MOUSE_SPRITE] = True
+                    else:
+                        add_position_tracking_script(block, positions_needed_for_sprite_names)
+
 
         positions_needed_for_sprite_names = set()
         for script in self.scripts:
             if has_distance_to_object_block(script.blocks, all_sprite_names):
-                script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
+                add_position_tracking_script(script.blocks, positions_needed_for_sprite_names)
+                '''script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
             # parse again ScriptElement tree
-            script.script_element = ScriptElement.from_raw_block(script.blocks)
+            script.script_element = ScriptElement.from_raw_block(script.blocks)'''
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
         ############################################################################################
