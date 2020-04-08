@@ -1929,18 +1929,53 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "distanceTo:")
     def _convert_distance_to_block(self):
-        [target_sprite] = self.arguments
-        print(target_sprite)
+        [target_sprite_name] = self.arguments
+        print(target_sprite_name)
 
-        for x in self.project.userVariables:
-            print("\t\t" + x.name)
+        x_pos_pattern = re.compile(scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + str(target_sprite_name))
+        y_pos_pattern = re.compile(scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + str(target_sprite_name))
 
-        reg = re.compile(r'S2CC:pos_[x|y]_' + target_sprite)
-        variables = filter(reg.search())
+        [target_x_pos] = filter(lambda x: re.search(x_pos_pattern, x.name), self.project.userVariables)
+        [target_y_pos] = filter(lambda y: re.search(y_pos_pattern, y.name), self.project.userVariables)
 
-        formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None)
-        return formula_element
+        target_x_pos_formula = catformula.FormulaElement(catElementType.USER_VARIABLE, target_x_pos.name, None)
+        target_y_pos_formula = catformula.FormulaElement(catElementType.USER_VARIABLE, target_y_pos.name, None)
 
+        x_pos_formula = catformula.FormulaElement(catElementType.SENSOR, catformula.Sensors.OBJECT_X.toString(), None)
+        y_pos_formula = catformula.FormulaElement(catElementType.SENSOR, catformula.Sensors.OBJECT_Y.toString(), None)
+
+        x_diff = catformula.FormulaElement(catElementType.OPERATOR, catformula.Operators.MINUS.toString(), None)
+        x_diff.leftChild = x_pos_formula
+        x_diff.rightChild = target_x_pos_formula
+
+        y_diff = catformula.FormulaElement(catElementType.OPERATOR, catformula.Operators.MINUS.toString(), None)
+        y_diff.leftChild = y_pos_formula
+        y_diff.rightChild = target_y_pos_formula
+
+        x_diff_bracket = catformula.FormulaElement(catElementType.BRACKET, None, None)
+        x_diff_bracket.rightChild = x_diff
+
+        y_diff_bracket = catformula.FormulaElement(catElementType.BRACKET, None, None)
+        y_diff_bracket.rightChild = y_diff
+
+        sq_x_diff = catformula.FormulaElement(catElementType.OPERATOR, catformula.Operators.MULT.toString(), None)
+        sq_x_diff.leftChild = sq_x_diff.rightChild = x_diff_bracket
+
+        sq_y_diff = catformula.FormulaElement(catElementType.OPERATOR, catformula.Operators.MULT.toString(), None)
+        sq_y_diff.leftChild = sq_y_diff.rightChild = y_diff_bracket
+
+        sum = catformula.FormulaElement(catElementType.OPERATOR, catformula.Operators.PLUS.toString(), None)
+        sum.leftChild = sq_x_diff
+        sum.rightChild = sq_y_diff
+
+        sqrt = catformula.FormulaElement(catElementType.FUNCTION, catformula.Functions.SQRT.toString(), None)
+        sqrt.leftChild = sum
+
+
+
+        # sqrt((xpos - trgt_xpos) * (xpos - trgt_xpos) + (ypos - trgt_ypos) * (ypos - trgt_ypos))
+
+        return sqrt
 
     @_register_handler(_block_name_to_handler_map, "doIf")
     def _convert_if_block(self):
