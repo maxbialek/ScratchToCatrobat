@@ -683,18 +683,22 @@ class Converter(object):
         else:
             sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, MOUSE_SPRITE_NAME)
 
+        for x in catrobat_scene.spriteList:
+            print(MOUSE_SPRITE_NAME + " "*(30-len(MOUSE_SPRITE_NAME)) + " == " + x.name + " ?")
+
         look = catcommon.LookData()
         look.setName(MOUSE_SPRITE_NAME)
         mouse_filename = _generate_mouse_filename()
         look.fileName = mouse_filename
         sprite.getLookList().add(look)
+        # the line above adds the look to the sprite
 
         if self.scratch_project._has_mouse_position_script:
             position_script = catbase.StartScript()
 
             forever_brick = catbricks.ForeverBrick()
-            forever_end = catbricks.LoopEndBrick(forever_brick)
-            forever_brick.setLoopEndBrick(forever_end)
+            # forever_end = catbricks.LoopEndBrick(forever_brick)
+            # forever_brick.setLoopEndBrick(forever_end)
 
             var_x_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + MOUSE_SPRITE_NAME
             pos_x_uservariable = catformula.UserVariable(var_x_name)
@@ -708,12 +712,12 @@ class Converter(object):
             set_y_formula = catformula.Formula(catformula.FormulaElement(catElementType.SENSOR, "OBJECT_Y", None))
             set_y_brick = catbricks.SetVariableBrick(set_y_formula, pos_y_uservariable)
 
-            catrobat_scene.getProject().projectVariables.add(pos_x_uservariable)
-            catrobat_scene.getProject().projectVariables.add(pos_y_uservariable)
+            catrobat_scene.getProject().userVariables.add(pos_x_uservariable)
+            catrobat_scene.getProject().userVariables.add(pos_y_uservariable)
 
             wait_brick = catbricks.WaitBrick(int(scratch.UPDATE_HELPER_VARIABLE_TIMEOUT * 1000))
 
-            position_script.brickList.addAll([forever_brick, set_x_brick, set_y_brick, wait_brick, forever_end])
+            position_script.brickList.addAll([forever_brick, set_x_brick, set_y_brick, wait_brick])
             sprite.addScript(position_script)
 
         move_script = catbase.BroadcastScript("_mouse_move_")
