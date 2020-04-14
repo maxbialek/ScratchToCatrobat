@@ -80,6 +80,7 @@ ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
 ADD_KEY_PRESSED_SCRIPT_KEY = "add_key_pressed_script_key"
 ADD_MOUSE_SPRITE = "add_mouse_sprite"
+ADD_RANDOM_POSITION_SCRIPT = "add_random_position-script"
 UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
 
 
@@ -121,7 +122,12 @@ class Object(common.DictAccessWrapper):
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set(),
             ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY: {},
             ADD_MOUSE_SPRITE: False,
+            ADD_RANDOM_POSITION_SCRIPT: set(),
         }
+
+        for x in self.scripts:
+            print(x.blocks)
+            print("#"*100)
 
         ############################################################################################
         # timer and timerReset workaround
@@ -239,22 +245,55 @@ class Object(common.DictAccessWrapper):
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
 
+
+        # GLIDE WORKAROUND
+
+
         def has_glide_to_sprite_script(block_list, all_sprite_names):
             for block in block_list:
-                if isinstance(block, list) and block[0] == 'glideTo:' and block[-1] in all_sprite_names:
+                if isinstance(block, list) and block[0] == 'glideTo:' and block[-1] in all_sprite_names + ['_mouse_', '_random_']:
                     return True
-                return False
+            return False
 
-        def add_position_tracking_script(block_list, positions_needed_for_sprite_names):
+        def add_glide_to_workaround_script(block_list, positions_needed_for_sprite_names):
+            glide_to_workaround_bricks = []
             for block in block_list:
-                if isinstance(block, list):
-                    if block[0] == 'glideTo:':
+                if isinstance(block, list) and block[0] == 'glideTo:':
+                    random_pos = False
+                    x_pos_var_name = S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[-1]
+                    y_pos_var_name = S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[-1]
+                    if block[-1] == "_random_":
+                        random_pos = True
+                        workaround_info[ADD_RANDOM_POSITION_SCRIPT].add(self.name)
+                        # different script, different names
+                        x_pos_var_name = "rand_x_pos_" + self.name
+                        y_pos_var_name = "rand_y_pos_" + self.name
+                    elif block[-1] == "_mouse_":
+                        workaround_info[ADD_MOUSE_SPRITE] = True
+                    else:
                         positions_needed_for_sprite_names.add(block[-1])
 
+                    if random_pos:
+                        glide_to_workaround_bricks += [
+                            ['broadcast:', 'calcRandPos'],
+                            ['doWaitUntil', ['=', ['readVariable', 'calc_lock'], '1']],
+                            ['glideSecs:toX:y:elapsed:from:', 3.0, ['readVariable', 'xPosNew'], ['readVariable', 'yPosNew']],
+                            ['setVar:to:', 'calc_lock', u'0']
+                        ]
+                    else:
+                        glide_to_workaround_bricks += [[
+                            "glideSecs:toX:y:elapsed:from:", block[1],
+                            ["readVariable", x_pos_var_name],
+                            ["readVariable", y_pos_var_name]
+                        ]]
+                else:
+                        glide_to_workaround_bricks += [block]
+            return glide_to_workaround_bricks
 
         for script in self.scripts:
             if has_glide_to_sprite_script(script.blocks, all_sprite_names):
-                add_position_tracking_script(script.blocks, positions_needed_for_sprite_names)
+                script.blocks = add_glide_to_workaround_script(script.blocks, positions_needed_for_sprite_names)
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
 
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
@@ -378,6 +417,7 @@ class RawProject(Object):
         sprite_name_sprite_mapping = dict(map(lambda obj: (obj.get_objName(), obj), self.objects))
         all_sprite_names = sprite_name_sprite_mapping.keys()
         position_script_to_be_added = set()
+        self._random_position_script = set()
         update_attribute_script_to_be_added = {}
         self.listened_keys = set()
         self._has_mouse_position_script = False
@@ -388,6 +428,7 @@ class RawProject(Object):
             if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0:
                 self.listened_keys.update(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY])
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
+            self._random_position_script |= workaround_info[ADD_RANDOM_POSITION_SCRIPT]
             self._has_mouse_position_script |= workaround_info[ADD_MOUSE_SPRITE]
 
             for sprite_name, sensor_names_set in workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY].iteritems():
@@ -398,7 +439,6 @@ class RawProject(Object):
 
         for destination_sprite_name in position_script_to_be_added:
             if destination_sprite_name == "_mouse_": continue
-
             sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
             assert sprite_object is not None
             self._add_update_position_script_to_object(sprite_object)
@@ -412,6 +452,27 @@ class RawProject(Object):
             sprite_object = sprite_name_sprite_mapping[sprite_name]
             assert sprite_object is not None
             self._add_update_attribute_script_to_object(sprite_object, sensor_names)
+
+        for sprite_name in self._random_position_script:
+            l = "calc_lock"
+            x = "xPosNew"
+            y = "yPosNew"
+            global_variables = self.objects[0]._dict_object["variables"]
+            global_variables.append({
+                "name": l,
+                "value": 0,
+                "isPersistent": False
+            })
+            global_variables.append({
+                "name": x,
+                "value": 0,
+                "isPersistent": False
+            })
+            global_variables.append({
+                "name": y,
+                "value": 0,
+                "isPersistent": False
+            })
 
     def _add_update_position_script_to_object(self, sprite_object):
         # add global variables for positions!
@@ -436,7 +497,6 @@ class RawProject(Object):
               ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]
-        sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
 
     def _add_update_attribute_script_to_object(self, sprite_object, sensor_names):
         forever_loop_body_blocks = []

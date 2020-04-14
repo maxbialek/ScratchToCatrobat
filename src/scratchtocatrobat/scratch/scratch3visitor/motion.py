@@ -27,6 +27,7 @@ def visitGotoxy(blockcontext):
 def visitGlideto(blockcontext):
     secs = visitGeneric(blockcontext, "SECS")
     to = visitGeneric(blockcontext, "TO")
+    # delete the line below if workaround works
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["glideTo:", secs, to] #TODO: not in scratch2?
 

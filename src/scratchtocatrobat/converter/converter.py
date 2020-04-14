@@ -237,7 +237,6 @@ class _ScratchToCatrobat(object):
         "gotoX:y:": catbricks.PlaceAtBrick,
         "gotoSpriteOrMouse:": catbricks.GoToBrick,
         "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
-        "glideTo:": None,
         "xpos:": catbricks.SetXBrick,
         "ypos:": catbricks.SetYBrick,
         "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,
@@ -654,6 +653,7 @@ class Converter(object):
         self._add_converted_sprites_to(_catr_scene)
         self.scratch_project.listened_keys = self._add_key_sprites_to(_catr_scene, self.scratch_project.listened_keys)
         self.add_cursor_sprite_to(_catr_scene, context.upcoming_sprites)
+        self.add_glide_to_random_script(_catr_scene, context.upcoming_sprites)
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
                                 scratch_project.name, scratch_project.instructions,
                                 scratch_project.notes_and_credits)
@@ -673,6 +673,24 @@ class Converter(object):
         for scratch_object in self.scratch_project.objects:
             catr_sprite = self._scratch_object_converter(scratch_object)
             catrobat_scene.addSprite(catr_sprite)
+
+    def add_glide_to_random_script(self, catrobat_scene, upcoming_sprites):
+        if len(self.scratch_project._random_position_script) > 0:
+            for x in self.scratch_project._random_position_script:
+                rand_pos_sprite_name = x + "_rand_pos"
+                sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, MOUSE_SPRITE_NAME)
+                look = catcommon.LookData()
+                look.setName("test")
+                filename = _generate_mouse_filename()
+                look.fileName = filename
+                sprite.getLookList().add(look)
+
+                start_script = catbase.StartScript()
+                transperancy_brick = catbricks.SetTransparencyBrick(99.99)
+                start_script.brickList.add(transperancy_brick)
+                sprite.addScript(start_script)
+
+                catrobat_scene.addSprite(sprite)
 
     def add_cursor_sprite_to(self, catrobat_scene, upcoming_sprites):
         if not MOUSE_SPRITE_NAME in upcoming_sprites and not self.scratch_project._has_mouse_position_script:
@@ -694,8 +712,6 @@ class Converter(object):
             position_script = catbase.StartScript()
 
             forever_brick = catbricks.ForeverBrick()
-            forever_end = catbricks.LoopEndBrick(forever_brick)
-            forever_brick.setLoopEndBrick(forever_end)
 
             var_x_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + MOUSE_SPRITE_NAME
             pos_x_uservariable = catformula.UserVariable(var_x_name)
@@ -709,12 +725,14 @@ class Converter(object):
             set_y_formula = catformula.Formula(catformula.FormulaElement(catElementType.SENSOR, "OBJECT_Y", None))
             set_y_brick = catbricks.SetVariableBrick(set_y_formula, pos_y_uservariable)
 
-            catrobat_scene.getProject().projectVariables.add(pos_x_uservariable)
-            catrobat_scene.getProject().projectVariables.add(pos_y_uservariable)
+            catrobat_scene.getProject().userVariables.add(pos_x_uservariable)
+            catrobat_scene.getProject().userVariables.add(pos_y_uservariable)
 
             wait_brick = catbricks.WaitBrick(int(scratch.UPDATE_HELPER_VARIABLE_TIMEOUT * 1000))
 
-            position_script.brickList.addAll([forever_brick, set_x_brick, set_y_brick, wait_brick, forever_end])
+            forever_brick.loopBricks.addAll([set_x_brick, set_y_brick, wait_brick])
+
+            position_script.brickList.add(forever_brick)
             sprite.addScript(position_script)
 
         move_script = catbase.BroadcastScript("_mouse_move_")
@@ -1290,6 +1308,10 @@ class _ScratchObjectConverter(object):
         assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
         [converted_bricks] = converted_bricks
 
+        print
+        print(map(catrobat.simple_name_for, converted_bricks))
+        print
+
         log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
         ignored_blocks = 0
         for brick in converted_bricks:
@@ -1402,6 +1424,7 @@ class ConvertedProject(object):
 
                 shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key_tuple[0])))
             for sprite in catrobat_program.getDefaultScene().spriteList:
+                print(sprite.name)
                 if sprite.name == MOUSE_SPRITE_NAME:
                     mouse_img_path = _mouse_image_path()
                     shutil.copyfile(mouse_img_path, os.path.join(images_path, _generate_mouse_filename()))
@@ -2478,8 +2501,15 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             return self.CatrobatClass(arg)
         log.warn("Invalid argument for NoteBrick: " + arg)
 
-    @_register_handler(_block_name_to_handler_map, "glideTo:")
+    '''@_register_handler(_block_name_to_handler_map, "glideTo:")
     def _convert_glide_to_block(self):
+
+
+        # MOVE THIS TO scratch.py
+
+
+
+
         reg = re.compile(r'S2CC:pos_[x|y]_' + str(self.arguments[1]))
         s = [x for x in self.project.userVariables if re.search(reg, x.name)]
         assert len(s) == 2
@@ -2491,4 +2521,4 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         y_pos.value = s[1].name
 
         secs = catrobat.create_formula_with_value(self.arguments[0])
-        return catbricks.GlideToBrick(catformula.Formula(x_pos), catformula.Formula(y_pos), secs)
+        return catbricks.GlideToBrick(catformula.Formula(x_pos), catformula.Formula(y_pos), secs)'''
